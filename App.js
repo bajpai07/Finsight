@@ -72,12 +72,30 @@ const positions = [
 ];
 
 // candlestick sample
-const candleData = [
-  { x: new Date("2024-04-05").getTime(), y: [135, 140, 132, 138] },
-  { x: new Date("2024-04-06").getTime(), y: [138, 145, 137, 142] },
-  { x: new Date("2024-04-07").getTime(), y: [142, 150, 140, 148] },
-  { x: new Date("2024-04-08").getTime(), y: [148, 155, 146, 152] },
-  { x: new Date("2024-04-09").getTime(), y: [150, 158, 147, 155] },
+const stockCandleData = [
+  { x: new Date("2024-04-01").getTime(), y: [135.2, 138.4, 134.8, 137.9] },
+  { x: new Date("2024-04-02").getTime(), y: [137.9, 141.2, 137.5, 140.1] },
+  { x: new Date("2024-04-03").getTime(), y: [140.1, 140.5, 138.1, 138.5] }, // Small body candle
+  { x: new Date("2024-04-04").getTime(), y: [138.5, 142.0, 138.0, 141.8] },
+  { x: new Date("2024-04-05").getTime(), y: [141.8, 143.1, 140.2, 142.2] },
+  { x: new Date("2024-04-08").getTime(), y: [142.5, 142.6, 140.1, 140.3] }, // Doji-like
+  { x: new Date("2024-04-09").getTime(), y: [140.3, 145.0, 139.8, 144.5] },
+  { x: new Date("2024-04-10").getTime(), y: [144.5, 148.2, 144.0, 147.9] },
+  { x: new Date("2024-04-11").getTime(), y: [147.9, 150.3, 147.0, 149.8] },
+  { x: new Date("2024-04-12").getTime(), y: [149.8, 151.0, 148.5, 149.0] }, // Down candle
+];
+
+const cryptoCandleData = [
+  { x: new Date("2024-04-01").getTime(), y: [2800, 2950, 2780, 2920] },
+  { x: new Date("2024-04-02").getTime(), y: [2920, 3100, 2910, 3080] },
+  { x: new Date("2024-04-03").getTime(), y: [3080, 3090, 3000, 3010] }, // Down candle
+  { x: new Date("2024-04-04").getTime(), y: [3010, 3050, 2980, 3030] },
+  { x: new Date("2024-04-05").getTime(), y: [3030, 3200, 3020, 3180] },
+  { x: new Date("2024-04-08").getTime(), y: [3180, 3190, 3120, 3130] }, // Small body
+  { x: new Date("2024-04-09").getTime(), y: [3130, 3300, 3110, 3280] },
+  { x: new Date("2024-04-10").getTime(), y: [3280, 3400, 3250, 3390] },
+  { x: new Date("2024-04-11").getTime(), y: [3390, 3410, 3350, 3380] }, // Indecision
+  { x: new Date("2024-04-12").getTime(), y: [3380, 3390, 3280, 3290] }, // Down candle
 ];
 
 // color palette (Tailwind tokens used via classNames but here for charts)
@@ -190,9 +208,17 @@ function Donut({ data }) {
   );
 }
 
-function CandleStick() {
+function CandleStick({ data }) {
   const options = {
     chart: { type: "candlestick", background: "transparent", toolbar: { show: true } },
+    plotOptions: {
+      candlestick: {
+        colors: {
+          upward: '#16a34a',
+          downward: '#dc2626'
+        }
+      }
+    },
     xaxis: { type: "datetime", labels: { style: { colors: "#94a3b8" } } },
     yaxis: { labels: { style: { colors: "#94a3b8" } } },
     grid: { borderColor: "rgba(255,255,255,.08)" },
@@ -200,7 +226,7 @@ function CandleStick() {
   };
   return (
     <div className="h-64">
-      <Chart options={options} series={[{ data: candleData }]} type="candlestick" height={256} />
+      <Chart options={options} series={[{ data: data }]} type="candlestick" height={256} />
     </div>
   );
 }
@@ -234,7 +260,7 @@ function Table({ rows }) {
   );
 }
 
-function ChartCard({ title, value, delta, data }) {
+function ChartCard({ title, value, delta, children }) {
   return (
     <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-6 flex flex-col">
       <div className="flex items-center justify-between mb-2">
@@ -253,47 +279,7 @@ function ChartCard({ title, value, delta, data }) {
         </div>
       </div>
       <div className="flex-1 min-h-[180px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="blue-gradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.7} />
-                <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="t"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#94a3b8", fontSize: 13, fontWeight: 500 }}
-              padding={{ left: 10, right: 10 }}
-            />
-            <YAxis
-              hide
-              domain={["auto", "auto"]}
-            />
-            <Tooltip
-              contentStyle={{
-                background: "#0f172a",
-                border: "1px solid rgba(255,255,255,.1)",
-                borderRadius: 12,
-                color: "#e2e8f0",
-                fontSize: 14,
-              }}
-              labelStyle={{ color: "#60a5fa" }}
-              itemStyle={{ color: "#60a5fa" }}
-            />
-            <Area
-              type="monotone"
-              dataKey="v"
-              stroke="#60a5fa"
-              fill="url(#blue-gradient)"
-              strokeWidth={3}
-              dot={false}
-              activeDot={{ r: 5, fill: "#60a5fa", stroke: "#fff", strokeWidth: 2 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        {children}
       </div>
     </div>
   );
@@ -464,10 +450,14 @@ export default function FinSight360() {
           <main className="p-6 grid gap-6 grid-cols-1 xl:grid-cols-12">
             {/* row 1 */}
             <div className="xl:col-span-6">
-              <ChartCard title="Stock Market" value={4232.46} delta={0.56} data={stockSeries} />
+              <ChartCard title="Stock Market" value={4232.46} delta={0.56}>
+                <CandleStick data={stockCandleData} />
+              </ChartCard>
             </div>
             <div className="xl:col-span-6">
-              <ChartCard title="Cryptocurrency" value={28123} delta={2.34} data={cryptoSeries} />
+              <ChartCard title="Cryptocurrency" value={28123} delta={2.34}>
+                <CandleStick data={cryptoCandleData} />
+              </ChartCard>
             </div>
             {/* row 2 */}
             <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
@@ -482,7 +472,7 @@ export default function FinSight360() {
             {canAnalyze && (
               <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
                 <div className="text-slate-300 text-sm mb-3">Candlestick Pattern</div>
-                <CandleStick />
+                        <CandleStick data={stockCandleData} />
               </div>
             )}
             {canAdmin && (
