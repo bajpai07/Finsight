@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area, Legend } from "recharts";
 import Chart from "react-apexcharts"; // for candlestick
 import { motion } from "framer-motion";
@@ -132,22 +133,86 @@ function Topbar({ dark, setDark, role, setRole }) {
   );
 }
 
-// ---------- sidebar
+// --- Sidebar with dynamic Markets menu ---
 function Sidebar() {
-  const Item = ({ icon: Icon, label }) => (
-    <div className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-slate-800/70 cursor-pointer">
-      <Icon className="w-4 h-4 text-slate-300" />
-      <span className="text-slate-200 text-sm">{label}</span>
+  const navigate = useNavigate();
+  const [showMarkets, setShowMarkets] = useState(false);
+  const closeTimeout = useRef();
+
+  // Open menu on hover or click
+  const openMenu = () => {
+    clearTimeout(closeTimeout.current);
+    setShowMarkets(true);
+  };
+
+  // Close menu with a slight delay for pointer movement
+  const closeMenu = () => {
+    closeTimeout.current = setTimeout(() => setShowMarkets(false), 150);
+  };
+
+  // Keep menu open if pointer is over menu or button
+  const menuProps = {
+    onMouseEnter: openMenu,
+    onMouseLeave: closeMenu,
+  };
+
+  const marketMenu = showMarkets && (
+    <div
+      className="absolute left-full top-0 ml-2 z-50 bg-slate-900 border border-white/10 rounded-xl shadow-xl w-64 p-3"
+      {...menuProps}
+    >
+      <div className="font-semibold text-slate-200 mb-2">Markets</div>
+      <div className="space-y-1">
+        <button
+          className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-100"
+          onClick={() => { setShowMarkets(false); navigate("/markets/world"); }}
+        >🌍 Entire world</button>
+        <button
+          className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-100"
+          onClick={() => { setShowMarkets(false); navigate("/markets/countries"); }}
+        >🏳️ Countries</button>
+        <button
+          className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-100"
+          onClick={() => { setShowMarkets(false); navigate("/markets/indices"); }}
+        >📈 Indices</button>
+        <button
+          className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-100"
+          onClick={() => { setShowMarkets(false); navigate("/markets/stocks"); }}
+        >💹 Stocks</button>
+        <button
+          className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-100"
+          onClick={() => { setShowMarkets(false); navigate("/markets/crypto"); }}
+        >🪙 Crypto</button>
+      </div>
     </div>
   );
+
+  const Item = ({ icon: Icon, label, to, ...rest }) => (
+    <div
+      className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-slate-800/70 cursor-pointer relative"
+      onClick={to ? () => navigate(to) : undefined}
+      {...rest}
+    >
+      <Icon className="w-4 h-4 text-slate-300" />
+      <span className="text-slate-200 text-sm">{label}</span>
+      {label === "Markets" && marketMenu}
+    </div>
+  );
+
   return (
-    <aside className="w-60 p-4 border-r border-white/10 bg-slate-900 text-slate-100 hidden md:block">
+    <aside className="w-60 p-4 border-r border-white/10 bg-slate-900 text-slate-100 hidden md:block relative">
       <div className="text-emerald-400 font-semibold mb-3">Navigation</div>
       <nav className="space-y-1">
-        <Item icon={LayoutDashboard} label="Dashboard" />
-        <Item icon={LineIcon} label="Markets" />
-        <Item icon={ListOrdered} label="Watchlist" />
-        <Item icon={Shield} label="Admin" />
+        <Item icon={LayoutDashboard} label="Dashboard" to="/" />
+        <Item
+          icon={LineIcon}
+          label="Markets"
+          onMouseEnter={openMenu}
+          onMouseLeave={closeMenu}
+          onClick={openMenu}
+        />
+        <Item icon={ListOrdered} label="Watchlist" to="/watchlist" />
+        <Item icon={Shield} label="Admin" to="/admin" />
       </nav>
       <div className="mt-8 text-xs text-slate-400">Tip: Drag cards to rearrange (demo)</div>
     </aside>
@@ -441,54 +506,49 @@ export default function FinSight360() {
   }
 
   return (
-    <div className={`${dark ? "dark" : ""}`}>
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid grid-cols-1 md:grid-cols-[240px_1fr]">
-        <Sidebar />
-        <div className="flex flex-col">
-          <Topbar dark={dark} setDark={setDark} role={role} setRole={setRole} />
-
-          <main className="p-6 grid gap-6 grid-cols-1 xl:grid-cols-12">
-            {/* row 1 */}
-            <div className="xl:col-span-6">
-              <ChartCard title="Stock Market" value={4232.46} delta={0.56}>
-                <CandleStick data={stockCandleData} />
-              </ChartCard>
-            </div>
-            <div className="xl:col-span-6">
-              <ChartCard title="Cryptocurrency" value={28123} delta={2.34}>
-                <CandleStick data={cryptoCandleData} />
-              </ChartCard>
-            </div>
-            {/* row 2 */}
-            <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
-              <div className="text-slate-300 text-sm mb-3">Top Stocks</div>
-              <Table rows={tableRows} />
-            </div>
-            <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
-              <div className="text-slate-300 text-sm mb-3">Portfolio</div>
-              <Donut data={positions} />
-            </div>
-            {/* row 3 */}
-            {canAnalyze && (
-              <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
-                <div className="text-slate-300 text-sm mb-3">Candlestick Pattern</div>
-                        <CandleStick data={stockCandleData} />
+    <Router>
+      <div className={`${dark ? "dark" : ""}`}>
+        <div className="min-h-screen bg-slate-950 text-slate-100 grid grid-cols-1 md:grid-cols-[240px_1fr]">
+          <Sidebar />
+          <div className="flex flex-col">
+            <Topbar dark={dark} setDark={setDark} role={role} setRole={setRole} />
+            <main className="p-6 grid gap-6 grid-cols-1 xl:grid-cols-12">
+              {/* row 1 */}
+              <div className="xl:col-span-6">
+                <ChartCard title="Stock Market" value={4232.46} delta={0.56}>
+                  <CandleStick data={stockCandleData} />
+                </ChartCard>
               </div>
-            )}
-            {canAdmin && (
+              <div className="xl:col-span-6">
+                <ChartCard title="Cryptocurrency" value={28123} delta={2.34}>
+                  <CandleStick data={cryptoCandleData} />
+                </ChartCard>
+              </div>
+              {/* row 2 */}
               <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
-                <div className="text-slate-300 text-sm mb-3">Admin – System Health</div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="p-3 rounded-xl bg-slate-800/60">API Latency: <span className="text-emerald-400">86ms</span></div>
-                  <div className="p-3 rounded-xl bg-slate-800/60">WS Connected: <span className="text-emerald-400">Yes</span></div>
-                  <div className="p-3 rounded-xl bg-slate-800/60">Cache Hits: <span className="text-emerald-400">96%</span></div>
-                  <div className="p-3 rounded-xl bg-slate-800/60">Users Online: <span className="text-emerald-400">142</span></div>
+                <div className="text-slate-300 text-sm mb-3">Top Stocks</div>
+                <Table rows={tableRows} />
+              </div>
+              <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
+                <div className="text-slate-300 text-sm mb-3">Portfolio</div>
+                <Donut data={positions} />
+              </div>
+              {/* row 3 */}
+              {canAdmin && (
+                <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
+                  <div className="text-slate-300 text-sm mb-3">Admin – System Health</div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="p-3 rounded-xl bg-slate-800/60">API Latency: <span className="text-emerald-400">86ms</span></div>
+                    <div className="p-3 rounded-xl bg-slate-800/60">WS Connected: <span className="text-emerald-400">Yes</span></div>
+                    <div className="p-3 rounded-xl bg-slate-800/60">Cache Hits: <span className="text-emerald-400">96%</span></div>
+                    <div className="p-3 rounded-xl bg-slate-800/60">Users Online: <span className="text-emerald-400">142</span></div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </main>
+              )}
+            </main>
+          </div>
         </div>
       </div>
-    </div>
+    </Router>
   );
 }
