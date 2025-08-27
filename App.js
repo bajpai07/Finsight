@@ -478,6 +478,130 @@ function AnimatedLogin({ onLogin }) {
   );
 }
 
+// --- Market Section Data ---
+const marketData = {
+  world: {
+    title: "Global Market Sentiment",
+    sentiment: "Bearish",
+    summary: "Global markets are experiencing a slight downturn due to macroeconomic concerns. Most indices are trading lower, with risk-off sentiment prevailing.",
+    movers: [
+      { name: "S&P 500", value: 6465.95, change: 0.41, currency: "USD" },
+      { name: "Nifty 50", value: 24712.05, change: -1.02, currency: "INR" },
+      { name: "FTSE 100", value: 9265.80, change: -0.60, currency: "GBP" },
+      { name: "BTC/USD", value: 111261.85, change: -0.46, currency: "USD" },
+      { name: "Gold", value: 2395.10, change: 0.12, currency: "USD" },
+    ],
+  },
+  indices: {
+    title: "Indian Indices",
+    indices: [
+      { name: "Nifty 50", value: 24712.05, change: -1.02, currency: "INR" },
+      { name: "Sensex", value: 80786.54, change: -1.04, currency: "INR" },
+      { name: "BSE LargeCap", value: 9513.76, change: -1.11, currency: "INR" },
+      { name: "BSE MidCap", value: 45322.02, change: -1.34, currency: "INR" },
+    ],
+  },
+  crypto: {
+    title: "Crypto & Forex Sentiment",
+    assets: [
+      { name: "Bitcoin", value: 111261.85, change: -0.46, currency: "USD" },
+      { name: "Ethereum", value: 4595.70, change: -0.12, currency: "USD" },
+      { name: "Tether", value: 1.0001, change: 0.00, currency: "USD" },
+      { name: "Gold", value: 2395.10, change: 0.12, currency: "USD" },
+      { name: "USD/INR", value: 83.12, change: 0.08, currency: "" },
+      { name: "EUR/USD", value: 1.09, change: -0.02, currency: "" },
+    ],
+    sentiment: "Mixed",
+    summary: "Crypto markets are mixed with Bitcoin slightly down, while Gold and USD/INR show mild positive sentiment."
+  }
+};
+
+// --- Market Section Component ---
+function MarketSection({ section }) {
+  if (section === "world") {
+    const { title, sentiment, summary, movers } = marketData.world;
+    return (
+      <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-6 mb-6">
+        <div className="text-2xl font-bold mb-2">{title}</div>
+        <div className="mb-2 text-lg">
+          Sentiment: <span className={sentiment === "Bearish" ? "text-rose-400" : "text-emerald-400"}>{sentiment}</span>
+        </div>
+        <div className="mb-4 text-slate-300">{summary}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {movers.map((m) => (
+            <div key={m.name} className="p-4 rounded-xl bg-slate-800/60 flex flex-col items-center">
+              <div className="font-semibold text-slate-100">{m.name}</div>
+              <div className="text-xl font-bold text-white">{m.value.toLocaleString()} {m.currency}</div>
+              <div className={m.change >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                {m.change >= 0 ? "+" : ""}{m.change}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (section === "indices") {
+    const { title, indices } = marketData.indices;
+    return (
+      <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-6 mb-6">
+        <div className="text-2xl font-bold mb-2">{title}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {indices.map((idx) => (
+            <div key={idx.name} className="p-4 rounded-xl bg-slate-800/60 flex flex-col items-center">
+              <div className="font-semibold text-slate-100">{idx.name}</div>
+              <div className="text-xl font-bold text-white">{idx.value.toLocaleString()} {idx.currency}</div>
+              <div className={idx.change >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                {idx.change >= 0 ? "+" : ""}{idx.change}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (section === "crypto") {
+    const { title, assets, sentiment, summary } = marketData.crypto;
+    return (
+      <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-6 mb-6">
+        <div className="text-2xl font-bold mb-2">{title}</div>
+        <div className="mb-2 text-lg">
+          Sentiment: <span className={sentiment === "Bearish" ? "text-rose-400" : sentiment === "Bullish" ? "text-emerald-400" : "text-amber-400"}>{sentiment}</span>
+        </div>
+        <div className="mb-4 text-slate-300">{summary}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {assets.map((a) => (
+            <div key={a.name} className="p-4 rounded-xl bg-slate-800/60 flex flex-col items-center">
+              <div className="font-semibold text-slate-100">{a.name}</div>
+              <div className="text-xl font-bold text-white">{a.value.toLocaleString()} {a.currency}</div>
+              <div className={a.change >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                {a.change >= 0 ? "+" : ""}{a.change}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+// --- Add MarketSection to Sidebar navigation ---
+// (This is a demo: in a real app, you'd use routes. Here, we use state for simplicity.)
+function DashboardWithMarketSection() {
+  const [marketTab, setMarketTab] = useState("world");
+  return (
+    <div>
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setMarketTab("world")} className={`px-4 py-2 rounded-lg ${marketTab === "world" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200"}`}>Entire World</button>
+        <button onClick={() => setMarketTab("indices")} className={`px-4 py-2 rounded-lg ${marketTab === "indices" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200"}`}>Indices</button>
+        <button onClick={() => setMarketTab("crypto")} className={`px-4 py-2 rounded-lg ${marketTab === "crypto" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200"}`}>Crypto/Forex</button>
+      </div>
+      <MarketSection section={marketTab} />
+    </div>
+  );
+}
+
 // ---------- main app
 export default function FinSight360() {
   const [dark, setDark] = useLocal("fs:dark", true);
@@ -513,6 +637,11 @@ export default function FinSight360() {
           <div className="flex flex-col">
             <Topbar dark={dark} setDark={setDark} role={role} setRole={setRole} />
             <main className="p-6 grid gap-6 grid-cols-1 xl:grid-cols-12">
+              {/* --- Market Section Start --- */}
+              <div className="xl:col-span-12">
+                <DashboardWithMarketSection />
+              </div>
+              {/* --- Market Section End --- */}
               {/* row 1 */}
               <div className="xl:col-span-6">
                 <ChartCard title="Stock Market" value={4232.46} delta={0.56}>
