@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-route
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area, Legend } from "recharts";
 import Chart from "react-apexcharts"; // for candlestick
 import { motion } from "framer-motion";
-import { Search, Bell, Settings, LogOut, LayoutDashboard, LineChart as LineIcon, ListOrdered, Sun, Moon, Shield, UserCircle2 } from "lucide-react";
+import { Search, Bell, Settings, LogOut, LayoutDashboard, LineChart as LineIcon, ListOrdered, Sun, Moon, Shield, UserCircle2, Wallet, DollarSign } from "lucide-react";
+import PaymentModal from "./PaymentModal";
 
 /**
  * FinSight360 – Real-Time Financial Analytics Dashboard (from scratch)
@@ -607,6 +608,8 @@ export default function FinSight360() {
   const [dark, setDark] = useLocal("fs:dark", true);
   const [role, setRole] = useLocal("fs:role", "Admin");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [cashBalance, setCashBalance] = useState(5250.75);
   const prices = usePriceFeed(["AAPL", "MSFT", "GOOG", "AMZN", "BTC", "ETH"]);
 
   // derived memoized series for top charts
@@ -674,9 +677,39 @@ export default function FinSight360() {
                   </div>
                 </div>
               )}
+              {/* --- Wallet Card --- */}
+              <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Wallet className="w-6 h-6 text-blue-400" />
+                    <h3 className="text-slate-300 text-base font-medium">My Wallet</h3>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-slate-400 text-sm">Available Cash</p>
+                    <p className="text-4xl font-bold text-white mt-1">
+                      ${fmt(cashBalance)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsPaymentModalOpen(true)}
+                  className="mt-6 w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
+                >
+                  <DollarSign className="w-5 h-5" />
+                  Add Funds
+                </button>
+              </div>
             </main>
           </div>
         </div>
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onConfirm={(amount) => {
+            setCashBalance((prev) => prev + amount);
+            setIsPaymentModalOpen(false);
+          }}
+        />
       </div>
     </Router>
   );
