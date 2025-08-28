@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area, Legend } from "recharts";
 import Chart from "react-apexcharts"; // for candlestick
 import { motion } from "framer-motion";
@@ -75,6 +75,29 @@ function useWatchlist() {
   }, [setSymbols]);
 
   return { watchlist: symbols, addStock, removeStock };
+}
+
+// ---------- user management hook
+const mockUsers = [
+  { id: 1, name: 'Admin User', email: 'admin@finsight.com', role: 'Admin' },
+  { id: 2, name: 'Analyst User', email: 'analyst@finsight.com', role: 'Analyst' },
+  { id: 3, name: 'Viewer User', email: 'viewer@finsight.com', role: 'Viewer' },
+  { id: 4, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'Analyst' },
+  { id: 5, name: 'John Doe', email: 'john.doe@example.com', role: 'Viewer' },
+];
+
+function useUsers() {
+  const [users, setUsers] = useState(mockUsers);
+
+  const updateUserRole = useCallback((userId, newRole) => {
+    setUsers(currentUsers =>
+      currentUsers.map(user =>
+        user.id === userId ? { ...user, role: newRole } : user
+      )
+    );
+  }, []);
+
+  return { users, updateUserRole };
 }
 
 // ---------- mock data
@@ -175,7 +198,7 @@ function Topbar({ dark, setDark, role, setRole }) {
 }
 
 // --- Sidebar with dynamic Markets menu ---
-function Sidebar() {
+function Sidebar({ role }) {
   const navigate = useNavigate();
   const [showMarkets, setShowMarkets] = useState(false);
   const closeTimeout = useRef();
@@ -253,7 +276,7 @@ function Sidebar() {
           onClick={openMenu}
         />
         <Item icon={ListOrdered} label="Watchlist" to="/watchlist" />
-        <Item icon={Shield} label="Admin" to="/admin" />
+        {role === 'Admin' && <Item icon={Shield} label="Admin" to="/admin" />}
       </nav>
       <div className="mt-8 text-xs text-slate-400">Tip: Drag cards to rearrange (demo)</div>
     </aside>
@@ -717,8 +740,6 @@ function DashboardContent({ prices, role }) {
     { sym: "NVDA", name: "NVIDIA Corp.", price: 901.4, delta: 2.44 },
   ], [prices]);
 
-  const canAdmin = role === "Admin";
-
   return (
     <div className="grid gap-6 grid-cols-1 xl:grid-cols-12">
       {/* row 1 */}
@@ -741,18 +762,6 @@ function DashboardContent({ prices, role }) {
         <div className="text-slate-300 text-sm mb-3">Portfolio</div>
         <Donut data={positions} />
       </div>
-      {/* row 3 */}
-      {canAdmin && (
-        <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
-          <div className="text-slate-300 text-sm mb-3">Admin – System Health</div>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="p-3 rounded-xl bg-slate-800/60">API Latency: <span className="text-emerald-400">86ms</span></div>
-            <div className="p-3 rounded-xl bg-slate-800/60">WS Connected: <span className="text-emerald-400">Yes</span></div>
-            <div className="p-3 rounded-xl bg-slate-800/60">Cache Hits: <span className="text-emerald-400">96%</span></div>
-            <div className="p-3 rounded-xl bg-slate-800/60">Users Online: <span className="text-emerald-400">142</span></div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -884,8 +893,106 @@ function WatchlistPage({ prices }) {
   );
 }
 
+function AdminRoute({ role, children }) {
+  if (role !== 'Admin') {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
 function AdminPage() {
-  return <div className="text-white text-2xl">Admin Panel (coming soon)</div>
+  const { users, updateUserRole } = useUsers();
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Column 1 */}
+      <div className="space-y-6">
+        {/* System Health */}
+        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-6">
+          <h2 className="text-xl font-semibold mb-4 text-white">System Health</h2>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="p-3 rounded-xl bg-slate-800/60">API Latency: <span className="text-emerald-400">86ms</span></div>
+            <div className="p-3 rounded-xl bg-slate-800/60">WS Connected: <span className="text-emerald-400">Yes</span></div>
+            <div className="p-3 rounded-xl bg-slate-800/60">Cache Hits: <span className="text-emerald-400">96%</span></div>
+            <div className="p-3 rounded-xl bg-slate-800/60">Users Online: <span className="text-emerald-400">142</span></div>
+          </div>
+        </div>
+
+        {/* Feature Flags */}
+        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-6">
+          <h2 className="text-xl font-semibold mb-4 text-white">Feature Flags</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Enable Experimental Charts</span>
+              <label className="switch">
+                <input type="checkbox" />
+                <span className="slider round"></span>
+              </label>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Maintenance Mode</span>
+               <label className="switch">
+                <input type="checkbox" />
+                <span className="slider round"></span>
+              </label>
+            </div>
+             <div className="flex items-center justify-between">
+              <span className="text-slate-300">Enable GraphQL API</span>
+               <label className="switch">
+                <input type="checkbox" defaultChecked />
+                <span className="slider round"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Column 2 */}
+      <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-6">
+        <h2 className="text-xl font-semibold mb-4 text-white">User Management</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-slate-300">
+              <tr className="border-b border-white/10">
+                <th className="px-3 py-2 text-left">Name</th>
+                <th className="px-3 py-2 text-left">Email</th>
+                <th className="px-3 py-2 text-left">Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(user => (
+                <tr key={user.id} className="border-b border-white/5 last:border-b-0">
+                  <td className="px-3 py-3 text-slate-100">{user.name}</td>
+                  <td className="px-3 py-3 text-slate-300">{user.email}</td>
+                  <td className="px-3 py-3">
+                    <select
+                      value={user.role}
+                      onChange={(e) => updateUserRole(user.id, e.target.value)}
+                      className="bg-slate-800/80 text-slate-100 text-sm rounded-lg px-2 py-1 border border-transparent focus:border-emerald-400 focus:ring-0"
+                    >
+                      <option>Admin</option>
+                      <option>Analyst</option>
+                      <option>Viewer</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <style>{`
+        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; }
+        input:checked + .slider { background-color: #34d399; }
+        input:checked + .slider:before { transform: translateX(14px); }
+        .slider.round { border-radius: 20px; }
+        .slider.round:before { border-radius: 50%; }
+      `}</style>
+    </div>
+  );
 }
 
 // ---------- main app
@@ -910,7 +1017,7 @@ export default function FinSight360() {
     <Router>
       <div className={`${dark ? "dark" : ""}`}>
         <div className="min-h-screen bg-slate-950 text-slate-100 flex">
-          <Sidebar />
+          <Sidebar role={role} />
           <div className="flex-1 flex flex-col">
             <Topbar dark={dark} setDark={setDark} role={role} setRole={setRole} />
             <main className="flex-1 p-6 overflow-y-auto">
@@ -918,7 +1025,11 @@ export default function FinSight360() {
                 <Route path="/" element={<DashboardContent prices={prices} role={role} />} />
                 <Route path="/markets/:section" element={<MarketPage />} />
                 <Route path="/watchlist" element={<WatchlistPage prices={prices} />} />
-                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin" element={
+                  <AdminRoute role={role}>
+                    <AdminPage />
+                  </AdminRoute>
+                } />
               </Routes>
             </main>
           </div>
