@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area, Legend } from "recharts";
 import Chart from "react-apexcharts"; // for candlestick
 import { motion } from "framer-motion";
@@ -492,14 +492,40 @@ const marketData = {
       { name: "Gold", value: 2395.10, change: 0.12, currency: "USD" },
     ],
   },
+  countries: {
+    title: "Markets by Country",
+    countries: [
+        { name: "United States", flag: "🇺🇸", change: 0.45 },
+        { name: "India", flag: "🇮🇳", change: -1.02 },
+        { name: "United Kingdom", flag: "🇬🇧", change: -0.60 },
+        { name: "Japan", flag: "🇯🇵", change: 0.25 },
+        { name: "China", flag: "🇨🇳", change: -0.15 },
+        { name: "Germany", flag: "🇩🇪", change: 0.10 },
+    ]
+  },
   indices: {
-    title: "Indian Indices",
+    title: "Major Market Indices",
+    summary: "A look at major global and Indian indices.",
     indices: [
       { name: "Nifty 50", value: 24712.05, change: -1.02, currency: "INR" },
       { name: "Sensex", value: 80786.54, change: -1.04, currency: "INR" },
+      { name: "Dow Jones", value: 39807.37, change: 0.45, currency: "USD" },
+      { name: "NASDAQ", value: 16342.11, change: 1.21, currency: "USD" },
       { name: "BSE LargeCap", value: 9513.76, change: -1.11, currency: "INR" },
       { name: "BSE MidCap", value: 45322.02, change: -1.34, currency: "INR" },
     ],
+  },
+  stocks: {
+      title: "Stock Screener",
+      summary: "Filter stocks based on market cap, P/E ratio, and sector. Data below is a sample of top tech stocks.",
+      stocks: [
+          { sym: "AAPL", name: "Apple Inc.", price: 145.1, change: 0.82, cap: "2.4T" },
+          { sym: "MSFT", name: "Microsoft Corp.", price: 305.2, change: 0.54, cap: "2.2T" },
+          { sym: "GOOG", name: "Alphabet Inc.", price: 2750.4, change: 0.31, cap: "1.8T" },
+          { sym: "AMZN", name: "Amazon.com Inc.", price: 130.5, change: 0.77, cap: "1.3T" },
+          { sym: "NVDA", name: "NVIDIA Corp.", price: 901.4, change: 2.44, cap: "2.1T" },
+          { sym: "TSLA", name: "Tesla, Inc.", price: 177.46, change: -0.23, cap: "562B" },
+      ]
   },
   crypto: {
     title: "Crypto & Forex Sentiment",
@@ -527,7 +553,7 @@ function MarketSection({ section }) {
           Sentiment: <span className={sentiment === "Bearish" ? "text-rose-400" : "text-emerald-400"}>{sentiment}</span>
         </div>
         <div className="mb-4 text-slate-300">{summary}</div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {movers.map((m) => (
             <div key={m.name} className="p-4 rounded-xl bg-slate-800/60 flex flex-col items-center">
               <div className="font-semibold text-slate-100">{m.name}</div>
@@ -541,12 +567,32 @@ function MarketSection({ section }) {
       </div>
     );
   }
+  if (section === "countries") {
+    const { title, countries } = marketData.countries;
+    return (
+      <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-6 mb-6">
+        <div className="text-2xl font-bold mb-4">{title}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {countries.map((c) => (
+            <div key={c.name} className="p-4 rounded-xl bg-slate-800/60 text-center hover:bg-slate-800 transition-colors">
+              <div className="text-4xl mb-2">{c.flag}</div>
+              <div className="font-semibold text-slate-100">{c.name}</div>
+              <div className={`font-semibold ${c.change >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                {c.change >= 0 ? "▲" : "▼"} {Math.abs(c.change)}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (section === "indices") {
-    const { title, indices } = marketData.indices;
+    const { title, summary, indices } = marketData.indices;
     return (
       <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-6 mb-6">
         <div className="text-2xl font-bold mb-2">{title}</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <p className="text-slate-300 mb-4">{summary}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {indices.map((idx) => (
             <div key={idx.name} className="p-4 rounded-xl bg-slate-800/60 flex flex-col items-center">
               <div className="font-semibold text-slate-100">{idx.name}</div>
@@ -560,6 +606,39 @@ function MarketSection({ section }) {
       </div>
     );
   }
+  if (section === "stocks") {
+    const { title, summary, stocks } = marketData.stocks;
+    return (
+      <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-6 mb-6">
+        <div className="text-2xl font-bold mb-2">{title}</div>
+        <p className="text-slate-300 mb-4">{summary}</p>
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <thead className="bg-slate-800/60 text-slate-300">
+                    <tr>
+                        <th className="px-3 py-2 text-left">Symbol</th>
+                        <th className="px-3 py-2 text-left">Company</th>
+                        <th className="px-3 py-2 text-right">Price</th>
+                        <th className="px-3 py-2 text-right">Change</th>
+                        <th className="px-3 py-2 text-right">Market Cap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {stocks.map((s, i) => (
+                        <tr key={s.sym} className={`border-t border-white/5 ${i % 2 ? "bg-slate-900/40" : "bg-slate-900/20"}`}>
+                            <td className="px-3 py-2 font-medium text-slate-100">{s.sym}</td>
+                            <td className="px-3 py-2 text-slate-300">{s.name}</td>
+                            <td className="px-3 py-2 text-right text-slate-100">${s.price}</td>
+                            <td className={`px-3 py-2 text-right ${s.change >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{s.change >= 0 ? "+" : ""}{s.change.toFixed(2)}%</td>
+                            <td className="px-3 py-2 text-right text-slate-100">{s.cap}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+      </div>
+    );
+  }
   if (section === "crypto") {
     const { title, assets, sentiment, summary } = marketData.crypto;
     return (
@@ -569,7 +648,7 @@ function MarketSection({ section }) {
           Sentiment: <span className={sentiment === "Bearish" ? "text-rose-400" : sentiment === "Bullish" ? "text-emerald-400" : "text-amber-400"}>{sentiment}</span>
         </div>
         <div className="mb-4 text-slate-300">{summary}</div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {assets.map((a) => (
             <div key={a.name} className="p-4 rounded-xl bg-slate-800/60 flex flex-col items-center">
               <div className="font-semibold text-slate-100">{a.name}</div>
@@ -583,36 +662,11 @@ function MarketSection({ section }) {
       </div>
     );
   }
-  return null;
+  return <div className="text-center py-10">Select a market section to view.</div>;
 }
 
-// --- Add MarketSection to Sidebar navigation ---
-// (This is a demo: in a real app, you'd use routes. Here, we use state for simplicity.)
-function DashboardWithMarketSection() {
-  const [marketTab, setMarketTab] = useState("world");
-  return (
-    <div>
-      <div className="flex gap-2 mb-4">
-        <button onClick={() => setMarketTab("world")} className={`px-4 py-2 rounded-lg ${marketTab === "world" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200"}`}>Entire World</button>
-        <button onClick={() => setMarketTab("indices")} className={`px-4 py-2 rounded-lg ${marketTab === "indices" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200"}`}>Indices</button>
-        <button onClick={() => setMarketTab("crypto")} className={`px-4 py-2 rounded-lg ${marketTab === "crypto" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200"}`}>Crypto/Forex</button>
-      </div>
-      <MarketSection section={marketTab} />
-    </div>
-  );
-}
-
-// ---------- main app
-export default function FinSight360() {
-  const [dark, setDark] = useLocal("fs:dark", true);
-  const [role, setRole] = useLocal("fs:role", "Admin");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const prices = usePriceFeed(["AAPL", "MSFT", "GOOG", "AMZN", "BTC", "ETH"]);
-
-  // derived memoized series for top charts
-  const stockSeries = useMemo(() => genSeries(21), []);
-  const cryptoSeries = useMemo(() => genSeries(21), []);
-
+// --- Page Components ---
+function DashboardContent({ prices, role }) {
   const tableRows = useMemo(() => [
     { sym: "AAPL", name: "Apple Inc.", price: prices.AAPL, delta: 0.82 },
     { sym: "MSFT", name: "Microsoft Corp.", price: prices.MSFT, delta: 0.54 },
@@ -623,7 +677,71 @@ export default function FinSight360() {
   ], [prices]);
 
   const canAdmin = role === "Admin";
-  const canAnalyze = role === "Admin" || role === "Analyst";
+
+  return (
+    <div className="grid gap-6 grid-cols-1 xl:grid-cols-12">
+      {/* row 1 */}
+      <div className="xl:col-span-6">
+        <ChartCard title="Stock Market" value={4232.46} delta={0.56}>
+          <CandleStick data={stockCandleData} />
+        </ChartCard>
+      </div>
+      <div className="xl:col-span-6">
+        <ChartCard title="Cryptocurrency" value={28123} delta={2.34}>
+          <CandleStick data={cryptoCandleData} />
+        </ChartCard>
+      </div>
+      {/* row 2 */}
+      <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
+        <div className="text-slate-300 text-sm mb-3">Top Stocks</div>
+        <Table rows={tableRows} />
+      </div>
+      <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
+        <div className="text-slate-300 text-sm mb-3">Portfolio</div>
+        <Donut data={positions} />
+      </div>
+      {/* row 3 */}
+      {canAdmin && (
+        <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
+          <div className="text-slate-300 text-sm mb-3">Admin – System Health</div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="p-3 rounded-xl bg-slate-800/60">API Latency: <span className="text-emerald-400">86ms</span></div>
+            <div className="p-3 rounded-xl bg-slate-800/60">WS Connected: <span className="text-emerald-400">Yes</span></div>
+            <div className="p-3 rounded-xl bg-slate-800/60">Cache Hits: <span className="text-emerald-400">96%</span></div>
+            <div className="p-3 rounded-xl bg-slate-800/60">Users Online: <span className="text-emerald-400">142</span></div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MarketPage() {
+  const { section } = useParams();
+  const { title } = marketData[section] || { title: "Markets" };
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold mb-6 text-white">{title}</h1>
+      <MarketSection section={section} />
+    </div>
+  );
+}
+
+function WatchlistPage() {
+  return <div className="text-white text-2xl">Watchlist (coming soon)</div>
+}
+
+function AdminPage() {
+  return <div className="text-white text-2xl">Admin Panel (coming soon)</div>
+}
+
+// ---------- main app
+export default function FinSight360() {
+  const [dark, setDark] = useLocal("fs:dark", true);
+  const [role, setRole] = useLocal("fs:role", "Admin");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const prices = usePriceFeed(["AAPL", "MSFT", "GOOG", "AMZN", "BTC", "ETH"]);
 
   if (!isLoggedIn) {
     return <AnimatedLogin onLogin={() => setIsLoggedIn(true)} />;
@@ -632,48 +750,17 @@ export default function FinSight360() {
   return (
     <Router>
       <div className={`${dark ? "dark" : ""}`}>
-        <div className="min-h-screen bg-slate-950 text-slate-100 grid grid-cols-1 md:grid-cols-[240px_1fr]">
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex">
           <Sidebar />
-          <div className="flex flex-col">
+          <div className="flex-1 flex flex-col">
             <Topbar dark={dark} setDark={setDark} role={role} setRole={setRole} />
-            <main className="p-6 grid gap-6 grid-cols-1 xl:grid-cols-12">
-              {/* --- Market Section Start --- */}
-              <div className="xl:col-span-12">
-                <DashboardWithMarketSection />
-              </div>
-              {/* --- Market Section End --- */}
-              {/* row 1 */}
-              <div className="xl:col-span-6">
-                <ChartCard title="Stock Market" value={4232.46} delta={0.56}>
-                  <CandleStick data={stockCandleData} />
-                </ChartCard>
-              </div>
-              <div className="xl:col-span-6">
-                <ChartCard title="Cryptocurrency" value={28123} delta={2.34}>
-                  <CandleStick data={cryptoCandleData} />
-                </ChartCard>
-              </div>
-              {/* row 2 */}
-              <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
-                <div className="text-slate-300 text-sm mb-3">Top Stocks</div>
-                <Table rows={tableRows} />
-              </div>
-              <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
-                <div className="text-slate-300 text-sm mb-3">Portfolio</div>
-                <Donut data={positions} />
-              </div>
-              {/* row 3 */}
-              {canAdmin && (
-                <div className="xl:col-span-6 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
-                  <div className="text-slate-300 text-sm mb-3">Admin – System Health</div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="p-3 rounded-xl bg-slate-800/60">API Latency: <span className="text-emerald-400">86ms</span></div>
-                    <div className="p-3 rounded-xl bg-slate-800/60">WS Connected: <span className="text-emerald-400">Yes</span></div>
-                    <div className="p-3 rounded-xl bg-slate-800/60">Cache Hits: <span className="text-emerald-400">96%</span></div>
-                    <div className="p-3 rounded-xl bg-slate-800/60">Users Online: <span className="text-emerald-400">142</span></div>
-                  </div>
-                </div>
-              )}
+            <main className="flex-1 p-6 overflow-y-auto">
+              <Routes>
+                <Route path="/" element={<DashboardContent prices={prices} role={role} />} />
+                <Route path="/markets/:section" element={<MarketPage />} />
+                <Route path="/watchlist" element={<WatchlistPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+              </Routes>
             </main>
           </div>
         </div>
