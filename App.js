@@ -59,6 +59,24 @@ function usePriceFeed(symbols) {
   return prices;
 }
 
+// ---------- watchlist hook
+function useWatchlist() {
+  const [symbols, setSymbols] = useLocal("fs:watchlist", ["AAPL", "GOOG", "TSLA"]);
+
+  const addStock = useCallback((symbol) => {
+    setSymbols(prevSymbols => {
+      if (prevSymbols.includes(symbol)) return prevSymbols;
+      return [...prevSymbols, symbol];
+    });
+  }, [setSymbols]);
+
+  const removeStock = useCallback((symbol) => {
+    setSymbols(prevSymbols => prevSymbols.filter(s => s !== symbol));
+  }, [setSymbols]);
+
+  return { watchlist: symbols, addStock, removeStock };
+}
+
 // ---------- mock data
 const genSeries = (len = 30) => Array.from({ length: len }).map((_, i) => ({
   t: `Apr ${i + 1}`,
@@ -97,6 +115,29 @@ const cryptoCandleData = [
   { x: new Date("2024-04-10").getTime(), y: [3280, 3400, 3250, 3390] },
   { x: new Date("2024-04-11").getTime(), y: [3390, 3410, 3350, 3380] }, // Indecision
   { x: new Date("2024-04-12").getTime(), y: [3380, 3390, 3280, 3290] }, // Down candle
+];
+
+const allStocks = [
+  { sym: "AAPL", name: "Apple Inc." },
+  { sym: "MSFT", name: "Microsoft Corp." },
+  { sym: "GOOG", name: "Alphabet Inc." },
+  { sym: "AMZN", name: "Amazon.com Inc." },
+  { sym: "TSLA", name: "Tesla, Inc." },
+  { sym: "NVDA", name: "NVIDIA Corp." },
+  { sym: "META", name: "Meta Platforms, Inc." },
+  { sym: "JPM", name: "JPMorgan Chase & Co." },
+  { sym: "V", name: "Visa Inc." },
+  { sym: "JNJ", name: "Johnson & Johnson" },
+  { sym: "WMT", name: "Walmart Inc." },
+  { sym: "PG", name: "Procter & Gamble Co." },
+  { sym: "NFLX", name: "Netflix, Inc." },
+  { sym: "DIS", name: "The Walt Disney Company" },
+  { sym: "PYPL", name: "PayPal Holdings, Inc." },
+  { sym: "ADBE", name: "Adobe Inc." },
+  { sym: "CRM", name: "Salesforce, Inc." },
+  { sym: "INTC", name: "Intel Corporation" },
+  { sym: "CSCO", name: "Cisco Systems, Inc." },
+  { sym: "PFE", name: "Pfizer Inc." },
 ];
 
 // color palette (Tailwind tokens used via classNames but here for charts)
@@ -728,8 +769,119 @@ function MarketPage() {
   );
 }
 
-function WatchlistPage() {
-  return <div className="text-white text-2xl">Watchlist (coming soon)</div>
+function WatchlistPage({ prices }) {
+  const { watchlist, addStock, removeStock } = useWatchlist();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setSearchResults([]);
+      return;
+    }
+    const results = allStocks.filter(stock =>
+      (stock.sym.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stock.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      !watchlist.includes(stock.sym)
+    ).slice(0, 5);
+    setSearchResults(results);
+  }, [searchTerm, watchlist]);
+
+  const watchlistDetails = useMemo(() =>
+    watchlist.map(sym => {
+      const stockInfo = allStocks.find(s => s.sym === sym);
+      if (!stockInfo) return null;
+
+      const price = prices[sym] || 0;
+      const delta = price > 0 ? ((sym.charCodeAt(0) % 7) - 3 + (price % 1) - 0.5) * 2 : 0;
+
+      return {
+        ...stockInfo,
+        price: price,
+        delta: delta,
+      };
+    }).filter(Boolean)
+  , [watchlist, prices]);
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold mb-6 text-white">My Watchlist</h1>
+
+      <div className="mb-8 p-6 bg-slate-900/80 border border-white/10 rounded-2xl">
+        <h2 className="text-xl font-semibold mb-4 text-white">Add to Watchlist</h2>
+        <div className="relative">
+          <Search className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by symbol or name (e.g., AAPL)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 text-lg"
+          />
+        </div>
+        {searchResults.length > 0 && searchTerm.length > 0 && (
+          <div className="mt-4 bg-slate-800 rounded-xl border border-white/10 overflow-hidden">
+            {searchResults.map(stock => (
+              <div key={stock.sym} className="flex items-center justify-between p-3 border-b border-white/5 last:border-b-0">
+                <div>
+                  <div className="font-bold text-white">{stock.sym}</div>
+                  <div className="text-sm text-slate-400">{stock.name}</div>
+                </div>
+                <button
+                  onClick={() => {
+                    addStock(stock.sym);
+                    setSearchTerm('');
+                  }}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition"
+                >
+                  Add
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-white/10">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-800/60 text-slate-300">
+            <tr>
+              <th className="px-3 py-2 text-left">Symbol</th>
+              <th className="px-3 py-2 text-left">Company</th>
+              <th className="px-3 py-2 text-right">Price</th>
+              <th className="px-3 py-2 text-right">Change</th>
+              <th className="px-3 py-2 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {watchlistDetails.map((stock, i) => (
+              <tr key={stock.sym} className={`border-t border-white/5 ${i % 2 ? "bg-slate-900/40" : "bg-slate-900/20"}`}>
+                <td className="px-3 py-2 font-medium text-slate-100">{stock.sym}</td>
+                <td className="px-3 py-2 text-slate-300">{stock.name}</td>
+                <td className="px-3 py-2 text-right text-slate-100">${fmt(stock.price)}</td>
+                <td className={`px-3 py-2 text-right ${stock.delta >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                  {stock.delta >= 0 ? "+" : ""}{stock.delta.toFixed(2)}%
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <button
+                    onClick={() => removeStock(stock.sym)}
+                    className="px-3 py-1 text-xs font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-lg transition"
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {watchlistDetails.length === 0 && (
+          <div className="text-center py-10 text-slate-400 bg-slate-900/20">
+            Your watchlist is empty. Use the search bar above to add stocks.
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function AdminPage() {
@@ -741,7 +893,14 @@ export default function FinSight360() {
   const [dark, setDark] = useLocal("fs:dark", true);
   const [role, setRole] = useLocal("fs:role", "Admin");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const prices = usePriceFeed(["AAPL", "MSFT", "GOOG", "AMZN", "BTC", "ETH"]);
+  const { watchlist } = useWatchlist();
+
+  const symbolsToWatch = useMemo(() => {
+    const dashboardSymbols = ["AAPL", "MSFT", "GOOG", "AMZN", "BTC", "ETH"];
+    return [...new Set([...dashboardSymbols, ...watchlist])];
+  }, [watchlist]);
+
+  const prices = usePriceFeed(symbolsToWatch);
 
   if (!isLoggedIn) {
     return <AnimatedLogin onLogin={() => setIsLoggedIn(true)} />;
@@ -758,7 +917,7 @@ export default function FinSight360() {
               <Routes>
                 <Route path="/" element={<DashboardContent prices={prices} role={role} />} />
                 <Route path="/markets/:section" element={<MarketPage />} />
-                <Route path="/watchlist" element={<WatchlistPage />} />
+                <Route path="/watchlist" element={<WatchlistPage prices={prices} />} />
                 <Route path="/admin" element={<AdminPage />} />
               </Routes>
             </main>
